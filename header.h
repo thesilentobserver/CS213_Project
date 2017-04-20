@@ -29,8 +29,14 @@ private:
 class user {
 
 public:
+	void menu(string uname);
 
 private:
+	void lend(string uname) {};
+	void rent(string uname) {};
+	void status(string uname);
+	void edit(string uname);
+
 
 };
 
