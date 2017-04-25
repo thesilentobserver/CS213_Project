@@ -2,6 +2,7 @@
 
 void authenticate::start()	{
 	
+	cout<<"Welcome to Rent-a-bike!\n";
 	int n;
 	while(true)	{
 		cout<<"\n1.Existing user? Login\n2.New user? Register\n0.Quit\n\n";	
@@ -74,7 +75,8 @@ void authenticate::new_user()	{
 			if((*user_db).load("users_list.xlsx"))	{
 				libxl::Sheet* sheet=(*user_db).getSheet(0);
 				string pwd;
-				while(true)	{
+				bool flag=true;
+				while(flag)	{
 					cout<<"Enter the desired username:";
 					cin>>uname;
 					if(!chk_uname(uname))	{
@@ -83,9 +85,12 @@ void authenticate::new_user()	{
 						cout<<"Pease enter password:";
 						cin>>pwd;
 						(*sheet).writeStr(row,1,pwd.c_str());
-						string name,c_no;
+						string c_no;
 						cout<<"Please enter your name:";
-						cin>>name;
+						cin.ignore();
+						char n[100];
+						cin.getline(n,100);
+						string name(n);
 						// getline(cin,name);
 						(*sheet).writeStr(row,2,name.c_str());
 						cout<<"Please enter your contact number:";
@@ -105,6 +110,7 @@ void authenticate::new_user()	{
 					}
 					else
 						cout<<"Sorry,the username already exists.Please choose another\n";
+					flag=false;
 				}
 			}
 			else
@@ -122,7 +128,7 @@ void authenticate::new_user()	{
 		(*sheet).writeStr(1,4,"Rented from");
 		(*sheet).writeStr(1,5,"Contact Number ");
 		(*sheet).writeStr(1,6,"Due Date");
-		(*sheet).writeStr(1,7,"Lended to");
+		(*sheet).writeStr(1,7,"Rented to");
 		(*sheet).writeStr(1,8,"Contact Number");
 		(*sheet).writeStr(1,9,"Due Date");
 		(*sheet).writeStr(1,10,"Money Due");
@@ -135,9 +141,12 @@ void authenticate::new_user()	{
 		cout<<"Pease enter password:";
 		cin>>pwd;
 		(*sheet).writeStr(row,1,pwd.c_str());
-		string name,c_no;
+		string c_no;
 		cout<<"Please enter your name:";
-		cin>>name;
+		cin.ignore();
+		char n[100];
+		cin.getline(n,100);
+		string name(n);
 		// getline(cin,name);
 		(*sheet).writeStr(row,2,name.c_str());
 		cout<<"Please enter your contact number:";
@@ -186,7 +195,7 @@ void user::menu(string uname)	{
 	int choice;
 	bool flag=true;
 	while(flag)	{
-		cout<<"\n1.Rent a bike\n2.Put up a bike for renting\n3.View profile\n4.Edit Profile\n5.Logout\n\n";
+		cout<<"\n1.Rent a bike\n2.Put up a bike for renting\n3.View profile\n4.Edit Profile\n0.Logout\n\n";
 		cin>>choice;
 		switch(choice)	{
 			case 1:	rent(uname);
@@ -197,7 +206,7 @@ void user::menu(string uname)	{
 					break;
 			case 4:	edit(uname);
 					break;
-			case 5:	flag=false;
+			case 0:	flag=false;
 					break;
 			default:cout<<"Incorrect input.Please enter a valid choice.\n";
 					break; 
@@ -285,16 +294,214 @@ void user::edit(string uname)	{
 	return;
 }
 
+int* user::getDate(int i)	{
 
+	time_t t_now=time(0);	
+	struct tm* date=localtime(&t_now);
+	time_t t_sec=mktime(date)+i*24*60*60;
+	struct tm* n_date=localtime(&t_sec);
+	
+	int* arr=new int[3];
+	arr[0]=(*n_date).tm_year+1900;
+	arr[1]=(*n_date).tm_mon+1;
+	arr[2]=(*n_date).tm_mday;
 
+	return arr;
+}
 
+void user::lend(string uname)	{
 
+	libxl::Book* rental_db=xlCreateXMLBook();
+	
+	if(!system("test -e rental_list.xlsx"))	{
 
+		(*rental_db).load("rental_list.xlsx");
+		libxl::Sheet* sheet=(*rental_db).getSheet(0); //Sheet 1 contains the bikes available for renting
+		libxl::Format* dformat=(*rental_db).addFormat();
+		(*dformat).setNumFormat(libxl::NUMFORMAT_DATE);
 
+		int row=(*sheet).lastRow();
+		user u;
+		(*sheet).writeStr(row,6,(u.getName(uname)).c_str());
+		(*sheet).writeStr(row,7,(u.getContact(uname)).c_str());
+
+		string  inp;
+		cout<<"Please fill out the necessary details-\n";
+		
+		cout<<"\nBrand-";
+		cin>>inp;
+		(*sheet).writeStr(row,0,inp.c_str());
+		
+		cout<<"\nGeared [y/n]-";
+		cin>>inp;
+		if(inp=="y")
+			inp="Yes";
+		else
+			inp="No";
+		(*sheet).writeStr(row,1,inp.c_str());
+		
+		cout<<"\nWhich rent bracket do you wish to place your bike in-\n1)Rs.500/day  2)Rs 800/day  3)Rs.1000/day\n";
+		int s;
+		cin>>s;
+		switch(s)	{
+			case 1:	inp="Rs.500/day";
+						break;
+			case 2:	inp="Rs.800/day";
+						break;
+			case 3:	inp="Rs.1000/day";
+						break;
+		}
+
+		(*sheet).writeStr(row,2,inp.c_str());
+		
+		cout<<"\nPlease enter your location-";
+		// cin>>inp;
+		cin.ignore();
+		char str[100];
+		cin.getline(str,100); 	
+			// cin>>inp;
+		// cout<<"Getline Input="<<str<<endl;
+		(*sheet).writeStr(row,3,str);
+		
+		cout<<"\nPlease enter the date till you want to list the bike for rent in DD MM YYYY format\n[If you want to list it indefinitely/till deletion, please enter '00 00 0000']\n";
+		int d,m,y;
+		cin>>d>>m>>y;
+		(*sheet).writeNum(row,5,(*rental_db).datePack(y,m,d),dformat);
+		
+		cout<<"\nPlease enter additional details (if any)\n[Press 'Enter' to skip/end comment]\n";
+		char com[1000];
+		cin.ignore();
+		cin.getline(com,1000);	
+		(*sheet).writeStr(row,4,com);
+
+		cout<<"\nList the bike for rental? [y/n]-";
+		cin>>inp;
+		if(inp=="y")	{
+			(*rental_db).save("rental_list.xlsx");
+			cout<<"\nBike listed up for rent successfully!\n\n";
+		}
+		else
+			cout<<"\nBike listing request discarded!\n\n";
+
+		(*rental_db).release();
+	}
+	else	{
+		//Create new
+		libxl::Sheet* sheet=(*rental_db).addSheet("Sheet1"); //Sheet 1 contains the bikes available for renting
+		libxl::Format* dformat=(*rental_db).addFormat();
+		(*dformat).setNumFormat(libxl::NUMFORMAT_DATE);
+		string arr[]={"Brand","Geared","Price","Location","Details","Available till","Owner","Contact Number"};
+
+		for(int i=0;i<=7;i++)
+			(*sheet).writeStr(1,i,arr[i].c_str());
+
+		int row=(*sheet).lastRow();
+
+		user u;
+		(*sheet).writeStr(row,6,(u.getName(uname)).c_str());
+		(*sheet).writeStr(row,7,(u.getContact(uname)).c_str());
+
+		string  inp;
+		cout<<"Please fill out the necessary details-\n";
+		
+		cout<<"\nBrand-";
+		cin>>inp;
+		(*sheet).writeStr(row,0,inp.c_str());
+		
+		cout<<"\nGeared [y/n]-";
+		cin>>inp;
+		if(inp=="y")
+			inp="Yes";
+		else
+			inp="No";
+		(*sheet).writeStr(row,1,inp.c_str());
+		
+		cout<<"\nWhich rent bracket do you wish to place your bike in-\n1)Rs.500/day  2)Rs 800/day  3)Rs.1000/day\n";
+		int s;
+		cin>>s;
+		switch(s)	{
+			case 1:	inp="Rs.500/day";
+						break;
+			case 2:	inp="Rs.800/day";
+						break;
+			case 3:	inp="Rs.1000/day";
+						break;
+		}
+
+		(*sheet).writeStr(row,2,inp.c_str());
+		
+		cout<<"\nPlease enter your location-";
+		// cin>>inp;
+		cin.ignore();
+		char str[100];
+		cin.getline(str,100);
+		// cout<<"Getline Inp="<<str<<endl;
+			// cin>>inp;
+		
+		(*sheet).writeStr(row,3,str);
+		
+		cout<<"\nPlease enter the date till you want to list the bike for rent in DD MM YYYY format\n[If you want to list it indefinitely/till deletion, please enter '00 00 0000']\n";
+		int d,m,y;
+		cin>>d>>m>>y;
+		(*sheet).writeNum(row,5,(*rental_db).datePack(y,m,d),dformat);
+		
+		cout<<"\nPlease enter additional details (if any)\n[Press 'Enter' to skip/end comment]\n";
+		char com[1000];
+		cin.ignore();
+		cin.getline(com,1000);
+		(*sheet).writeStr(row,4,com);
+
+		cout<<"\nList the bike for rental? [y/n]-";
+		cin>>inp;
+		if(inp=="y")	{
+			(*rental_db).save("rental_list.xlsx");
+			cout<<"\nBike put up for rent successfully!\n\n";
+		}
+		else
+			cout<<"\nBike listing request discarded!\n\n";
+
+		(*rental_db).release();
+	}
+
+return;
+}
+
+string user::getName(string uname)	{
+	
+	libxl::Book* user_db=xlCreateXMLBook();
+	(*user_db).load("users_list.xlsx");
+	libxl::Sheet* sheet=(*user_db).getSheet(0);
+	int row=(*sheet).firstRow();
+	for(;row!=(*sheet).lastRow();row++)
+		if((*sheet).readStr(row,0)==uname)
+			break;
+
+	string name=(*sheet).readStr(row,2);
+	
+	(*user_db).release();
+
+	return name;	
+}
+
+string user::getContact(string uname)	{
+	
+	libxl::Book* user_db=xlCreateXMLBook();
+	(*user_db).load("users_list.xlsx");
+	libxl::Sheet* sheet=(*user_db).getSheet(0);
+	int row=(*sheet).firstRow();
+	for(;row!=(*sheet).lastRow();row++)
+		if((*sheet).readStr(row,0)==uname)
+			break;
+
+	string contact=(*sheet).readStr(row,3);
+	
+	(*user_db).release();
+	
+	return contact;	
+}
 
 
 int main()	{
 	authenticate auth;
-	cout<<"Welcome to Rent-a-bike!\n";
 	auth.start();
 }

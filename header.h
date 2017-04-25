@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "libxl.h"
 #include <string>
+#include <ctime>
 
 using namespace std;
 
@@ -30,9 +31,14 @@ class user {
 
 public:
 	void menu(string uname);
+	int* getDate(int i);
+	string getName(string uname);
+	string getContact(string uname);
+
+
 
 private:
-	void lend(string uname) {};
+	void lend(string uname);
 	void rent(string uname) {};
 	void status(string uname);
 	void edit(string uname);
