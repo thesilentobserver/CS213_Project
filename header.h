@@ -34,14 +34,17 @@ public:
 	int* getDate(int i);
 	string getName(string uname);
 	string getContact(string uname);
+	int getBrands(string* brands);
 
 
 
 private:
 	void lend(string uname);
-	void rent(string uname) {};
+	void rent(string uname);
 	void status(string uname);
 	void edit(string uname);
+	void runQuery(int* filters);
+	void confirmRent(int choice);
 
 
 };
