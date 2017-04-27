@@ -6,23 +6,22 @@
 
 using namespace std;
 
-// struct db_access	{
+struct db_access	{
 
-// libxl::Book* book;
-// libxl::Sheet* sheet1;
-// libxl::Sheet* sheet2;
-// libxl::Format* format;
+libxl::Book* book;
+libxl::Sheet* sheet1;
+libxl::Sheet* sheet2;
+libxl::Format* format;
 
 
-// public:
-// 	void createDB(string sheet);						//Create book and add new sheet
-// 	void loadDB(string db_name,int sheet);				//Load book and load Sheet1
-// 	void loadDB(string db_name,int sheet1,sheet2);		//Create/load book and load Sheet1 and Sheet2
-// 	void saveDB(string db_name);
+public:
+	void createDB(string sheet);						//Create book and add new sheet
+	void loadDB(string db_name,int sheet);				//Load book and load Sheet1
+	void loadDB(string db_name,int sheet1,int sheet2);	//Create/load book and load Sheet1 and Sheet2
+	void saveDB(string db_name);
+	void clearMem();
 
-// private:
-
-// };
+};
 
 
 
