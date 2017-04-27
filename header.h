@@ -44,7 +44,7 @@ private:
 	void status(string uname);
 	void edit(string uname);
 	void runQuery(int* filters);
-	void confirmRent(int choice);
+	void confirmRent(int choice,int* till_date);
 
 
 };

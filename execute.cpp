@@ -321,9 +321,9 @@ void user::lend(string uname)	{
 		(*dformat).setNumFormat(libxl::NUMFORMAT_DATE);
 
 		int row=(*sheet).lastRow();
-		user u;
-		(*sheet).writeStr(row,6,(u.getName(uname)).c_str());
-		(*sheet).writeStr(row,7,(u.getContact(uname)).c_str());
+		// user u;
+		(*sheet).writeStr(row,6,uname.c_str());
+		// (*sheet).writeStr(row,7,(u.getContact(uname)).c_str());
 
 		string  inp;
 		cout<<"Please fill out the necessary details-\n";
@@ -390,16 +390,16 @@ void user::lend(string uname)	{
 		libxl::Sheet* sheet=(*rental_db).addSheet("Sheet1"); //Sheet 1 contains the bikes available for renting
 		libxl::Format* dformat=(*rental_db).addFormat();
 		(*dformat).setNumFormat(libxl::NUMFORMAT_DATE);
-		string arr[]={"Brand","Geared","Price","Location","Details","Available till","Owner","Contact Number"};
+		string arr[]={"Brand","Geared","Price","Location","Details","Available till","Owner Username"};
 
-		for(int i=0;i<=7;i++)
+		for(int i=0;i<=6;i++)
 			(*sheet).writeStr(1,i,arr[i].c_str());
 
 		int row=(*sheet).lastRow();
 
-		user u;
-		(*sheet).writeStr(row,6,(u.getName(uname)).c_str());
-		(*sheet).writeStr(row,7,(u.getContact(uname)).c_str());
+		// user u;
+		(*sheet).writeStr(row,6,uname.c_str());
+		// (*sheet).writeStr(row,7,(u.getContact(uname)).c_str());
 
 		string  inp;
 		cout<<"Please fill out the necessary details-\n";
@@ -465,60 +465,64 @@ return;
 void user::rent(string uname)	{
 	
 	user u;
+	if(!system("test -e rental_list.xlsx"))	{
 	// string filters[4];
-	cout<<"Please choose the price filter [press '0' to skip]\n1.Rs.500/day only\n2.Rs.800/day only\n3.Rs.1000/day only\n4.<=Rs.800/day\n";
-	// cin.clear();
-	// cin.ignore();
-	// char c[100];
-	// cin.getline(c,100,'\n');
-	int pr;
-	cin>>pr;
+		cout<<"Please choose the price filter [press '0' to skip]\n1.Rs.500/day only\n2.Rs.800/day only\n3.Rs.1000/day only\n4.<=Rs.800/day\n";
+		// cin.clear();
+		// cin.ignore();
+		// char c[100];
+		// cin.getline(c,100,'\n');
+		int pr;
+		cin>>pr;
 
 
-	cout<<"Please choose the brand filter [press '0' to skip]\n";
-	
-	string* brands=new string[25];
-	int l=u.getBrands(brands);
-	for(int i=0;i<l;i++)
-		cout<<i+1<<"."<<brands[i]<<endl;
-	// cout<<"Here";
-	// cin.clear();
-	// cin.ignore();
-	// char c1[100];
-	// cin.getline(c1,100,'\n');
-	int br;
-	cin>>br;
-	// filter[1]=brands[ch-1];
+		cout<<"Please choose the brand filter [press '0' to skip]\n";
+		
+		string* brands=new string[25];
+		int l=u.getBrands(brands);
+		for(int i=0;i<l;i++)
+			cout<<i+1<<"."<<brands[i]<<endl;
+		// cout<<"Here";
+		// cin.clear();
+		// cin.ignore();
+		// char c1[100];
+		// cin.getline(c1,100,'\n');
+		int br;
+		cin>>br;
+		// filter[1]=brands[ch-1];
 
-	cout<<"Please choose the geared bikes filter [press '0' to skip]\n1.Geared only\n2.Non-geared only\n"; 
-	// char c2[100];
-	// cin.clear();
-	// cin.ignore();
-	// cin.getline(c2,100,'\n');
-	int gr;
-	cin>>gr;
+		cout<<"Please choose the geared bikes filter [press '0' to skip]\n1.Geared only\n2.Non-geared only\n"; 
+		// char c2[100];
+		// cin.clear();
+		// cin.ignore();
+		// cin.getline(c2,100,'\n');
+		int gr;
+		cin>>gr;
 
-	cout<<"Please enter the number of days you want to rent-";
-	// cin.clear();
-	// cin.ignore();
-	// char c3[100];
-	// cin.getline(c3,100,'\n');
-	int d;
-	cin>>d;
+		cout<<"Please enter the number of days you want to rent-";
+		// cin.clear();
+		// cin.ignore();
+		// char c3[100];
+		// cin.getline(c3,100,'\n');
+		int d;
+		cin>>d;
 
-	// cout<<pr<<" "<<br<<" "<<gr<<" "<<d<<endl;
-	int filters[4]={pr,br,gr,d};
-	// if(br!=0)	{
-	// 	// int i=stoi(br);
-	// 	// cout<<"i="<<i<<endl;
-	// 	filters[1]=brands[br-1];
-		// cout<<"filter="<<filters[3]<<endl;
-	
+		// cout<<pr<<" "<<br<<" "<<gr<<" "<<d<<endl;
+		int filters[4]={pr,br,gr,d};
+		// if(br!=0)	{
+		// 	// int i=stoi(br);
+		// 	// cout<<"i="<<i<<endl;
+		// 	filters[1]=brands[br-1];
+			// cout<<"filter="<<filters[3]<<endl;
+		
 
-	// cout<<"Before\n"<<filters[0]<<" "<<filters[1]<<" "<<filters[2]<<" "<<filters[3];
+		// cout<<"Before\n"<<filters[0]<<" "<<filters[1]<<" "<<filters[2]<<" "<<filters[3];
 
-	u.runQuery(filters);
-	
+		u.runQuery(filters);
+	}
+	else
+		cout<<"\nNo bikes available for rent currently!\n";
+
 	return;
 
 }
@@ -561,6 +565,9 @@ void user::runQuery(int* filters)	{
 	user u;
 	libxl::Book* rental_db=xlCreateXMLBook();
 	(*rental_db).load("rental_list.xlsx");
+	libxl::Format* dformat=(*rental_db).addFormat();
+	(*dformat).setNumFormat(libxl::NUMFORMAT_DATE);
+
 	libxl::Sheet* r_sheet=(*rental_db).getSheet(0);
 
 	// libxl::Book* query=xlCreateXMLBook();
@@ -619,8 +626,19 @@ void user::runQuery(int* filters)	{
 				break;
 	}
 
+	
+
+	// cout<<"Here";
 
 	for(int i=2;i!=(*r_sheet).lastRow();i++)	{
+
+	// cout<<"\nHere too";
+		user x;
+		string name=x.getName((*r_sheet).readStr(i,6));
+		string cno=x.getContact((*r_sheet).readStr(i,6));
+		(*r_sheet).writeStr(i,7,name.c_str());
+
+		(*r_sheet).writeStr(i,8,cno.c_str());
 
 		if(brand_f!="")	{
 			
@@ -681,37 +699,181 @@ void user::runQuery(int* filters)	{
 			}
 		}
 
+		
+		// cout<<name<<cno;
+
 	}
-	(*r_sheet).insertCol((*r_sheet).lastCol(),(*r_sheet).lastCol());
-	int col=(*r_sheet).lastCol();
-	(*r_sheet).writeStr(1,(*r_sheet).lastCol(),"uniqueID");
+	// (*r_sheet).insertCol((*r_sheet).lastCol(),(*r_sheet).lastCol());
+	// (*r_sheet).insertCol((*r_sheet).lastCol(),(*r_sheet).lastCol());
+
+	(*r_sheet).writeStr(1,7,"Owner Name");
+	(*r_sheet).writeStr(1,8,"Contact Number");
+	// (*r_sheet).insertCol((*r_sheet).lastCol(),(*r_sheet).lastCol());
+	int col=9;
+	(*r_sheet).writeStr(1,9,"uniqueID");
 	for(int i=2;i!=(*r_sheet).lastRow();i++)
 		(*r_sheet).writeNum(i,col,i-1);
 
 	(*rental_db).save("queryResults.xlsx");
-	cout<<"\n\nA 'queryResults.xlsx' has been created.Please enter the 'uniqueID' of the bike you want to rent or enter '0' to discard query\n";
+	(*rental_db).release();
+	cout<<"\nA 'queryResults.xlsx' has been created.Please enter the 'uniqueID' of the bike you want to rent or enter '0' to discard query\n";
 	int ch;
 	cin>>ch;
+	if(ch==0)
+		return;
+	else
+		confirmRent(ch,till_date);
 
-	libxl::Sheet* l_sheet=(*rental_db).getSheet(1);
+	return;
+
+	//Copied from backup
+	
+}
+
+void user::confirmRent(int ch,int* till_date)	{
+
+	string uname,pass;
+	cout<<"Please enter username and password to confirm-\n";
+	cout<<"Username:";
+	cin>>uname;
+	cout<<"Password:";
+
+	libxl::Book* rental=xlCreateXMLBook();
+	libxl::Book* query=xlCreateXMLBook();
+
+	(*rental).load("rental_list.xlsx");
+	(*query).load("queryResults.xlsx");
+
+	libxl::Format* dateformat=(*rental).addFormat();
+	(*dateformat).setNumFormat(libxl::NUMFORMAT_DATE);
+
+	libxl::Sheet* r_sheet=(*rental).getSheet(0);
+	libxl::Sheet* l_sheet=(*rental).getSheet(1);
+
+	libxl::Sheet* q_sheet=(*query).getSheet(0);
+
 	if(l_sheet!=NULL)	{
+
 		int row=(*l_sheet).lastRow();
-		for(int i=0;i<=9;i++)	{
+
+		for(int i=0;i<=6;i++)	{
 			if(i!=5)
-				(*l_sheet).writeStr(row,i,(*r_sheet).readStr(ch-1,i));
+				(*l_sheet).writeStr(row,i,(*q_sheet).readStr(ch+1,i));
 			else
-				(*l_sheet).writeNum(row,i,(*r_sheet).readNum(ch-1,i));
+				(*l_sheet).writeNum(row,i,(*q_sheet).readNum(ch+1,i),dateformat);
+
 		}
-		
-	}	
+
+		(*l_sheet).writeStr(row,7,uname.c_str());
+		(*l_sheet).writeNum(row,8,(*rental).datePack(till_date[0],till_date[1],till_date[2]),dateformat);
+
+	}
 	else	{
-		//Create new sheet
+		//Create
+		l_sheet=(*rental).addSheet("Sheet2");
+		string head[]={"Brand","Geared","Price","Location","Details","Available till","Owner Username","Renter Username","Due Date"};
+		for(int i=0;i<=8;i++)
+			(*l_sheet).writeStr(1,i,head[i].c_str());
+
+		int row=(*l_sheet).lastRow();
+
+		for(int i=0;i<=6;i++)	{
+			if(i!=5)
+				(*l_sheet).writeStr(row,i,(*q_sheet).readStr(ch+1,i));
+			else
+				(*l_sheet).writeNum(row,i,(*q_sheet).readNum(ch+1,i),dateformat);
+
+		}
+
+		(*l_sheet).writeStr(row,7,uname.c_str());
+		(*l_sheet).writeNum(row,8,(*rental).datePack(till_date[0],till_date[1],till_date[2]),dateformat);
+
 	}
 
+	cout<<"Bike rented successfully!\nReturn date-"<<till_date[2]<<"/"<<till_date[1]<<"/"<<till_date[0]<<endl;
+	system("rm -f queryResults.xlsx");
+	(*rental).save("rental_list.xlsx");
+	(*rental).release();
+	(*query).release();
 
-	(*rental_db).release();
 	return;
 }
+
+	// string uname,pass;
+	// cout<<"Please enter username and password to confirm:\nUsername:";
+	// cin>>uname;
+	// cout<<"Password:";
+	// cin>>pass;
+
+	// libxl::Book* rental=xlCreateXMLBook();
+	// libxl::Book* query=xlCreateXMLBook();
+	// (*rental).load("rental_list.xlsx");
+	// (*query).load("queryResults.xlsx");
+
+	// libxl::Format* dateformat=(*rental).addFormat();
+	// (*dateformat).setNumFormat(libxl::NUMFORMAT_DATE);
+
+	// libxl::Sheet* q_sheet=(*query).getSheet(0);
+	// libxl::Sheet* l_sheet=(*rental).getSheet(1);
+
+	// if(l_sheet!=NULL)	{
+	// 	int row=(*l_sheet).lastRow();
+	// 	for(int i=0;i<=6;i++)	{
+	// 		if(i!=5)
+	// 			(*l_sheet).writeStr(row,i,(*q_sheet).readStr(ch-1,i));
+	// 		else
+	// 			(*l_sheet).writeNum(row,i,(*q_sheet).readNum(ch-1,i),dateformat);
+	// 	}
+
+	// 	(*l_sheet).writeStr(row,7,uname.c_str());
+	// 	(*l_sheet).writeNum(row,8,(*rental).datePack(till_date[0],till_date[1],till_date[2]),dateformat);	
+	// }	
+	// else	{
+	// 	//Create new sheet
+	// 	libxl::Sheet* l_sheet=(*rental_db).addSheet("Sheet2");
+	// 	string header[]={"Brand","Geared","Price","Location","Details","Available till","Owner Username","Renter Username","Due Date"};
+	// 	for(int i=0;i<=8;i++)
+	// 		(*l_sheet).writeStr(1,i,header[i].c_str());
+		
+	// 	int row=(*l_sheet).lastRow();
+	// 	for(int i=0;i<=6;i++)	{
+	// 		if(i!=5)
+	// 			(*l_sheet).writeStr(row,i,(*q_sheet).readStr(ch-1,i));
+	// 		else
+	// 			(*l_sheet).writeNum(row,i,(*q_sheet).readNum(ch-1,i),dateformat);
+	// 	}
+
+	// 	(*l_sheet).writeStr(row,7,uname.c_str());
+	// 	(*l_sheet).writeNum(row,8,(*rental).datePack(till_date[0],till_date[1],till_date[2]),dateformat);
+	// }
+
+	// cout<<"Cycle rented to you successfully!\nDue Date-"<<till_date[2]<<"/"<<till_date[1]<<"/"<<till_date[0]<<endl;
+	
+	// (*rental).save("rental_list.xlsx");
+	// (*rental).release();
+	// (*query).release();
+	// return;
+
+
+	// libxl::Sheet* l_sheet=(*rental_db).getSheet(1);
+	// if(l_sheet!=NULL)	{
+	// 	int row=(*l_sheet).lastRow();
+	// 	for(int i=0;i<=9;i++)	{
+	// 		if(i!=5)
+	// 			(*l_sheet).writeStr(row,i,(*r_sheet).readStr(ch-1,i));
+	// 		else
+	// 			(*l_sheet).writeNum(row,i,(*r_sheet).readNum(ch-1,i));
+	// 	}
+		
+	// }	
+	// else	{
+	// 	//Create new sheet
+	// }
+
+
+// 	(*rental_db).release();
+// 	return;
+// }
 
 
 
