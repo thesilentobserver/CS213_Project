@@ -1,5 +1,48 @@
 #include "header.h"
 
+// void db_access::createDB(string sheet)	{
+
+// 	this->book=xlCreateXMLBook();
+// 	this->sheet1=(*(this->book)).addSheet(sheet);
+// 	this->format=(*(this->book)).addFormat();
+// 	(*(this->format)).setNumFormat(libxl::NUMFORMAT_DATE);
+
+// 	return;
+// }
+
+
+// void db_access::loadDB(string db_name,int sheet)	{
+
+// 	this->book=xlCreateXMLBook();
+// 	(*(this->book)).load(db_name);
+// 	this->sheet1=(*(this->book)).getSheet(sheet);
+// 	this->format=(*(this->book)).addFormat();
+// 	(*(this->format)).setNumFormat(libxl::NUMFORMAT_DATE);
+
+// 	return;
+// }
+
+
+// void db_access::loadDB(string db_name,int sheet1,int sheet2)	{
+
+// 	this->book=xlCreateXMLBook();
+// 	(*(this->book)).load(db_name);
+// 	this->sheet1=(*(this->book)).getSheet(sheet1);
+// 	this->sheet2=(*(this->book)).getSheet(sheet2);
+// 	this->format=(*(this->book)).addFormat();
+// 	(*(this->format)).setNumFormat(libxl::NUMFORMAT_DATE);
+
+// 	return;
+// }
+
+// void db_access::saveDB(string db_name)	{
+
+// 	(*(this->book)).save(db_name);
+// 	(*(this->book)).release();
+
+// 	return;
+// }
+
 void authenticate::start()	{
 	
 	cout<<"Welcome to Rent-a-bike!\n";
@@ -25,7 +68,8 @@ void authenticate::login()	{
 		libxl::Book* user_db=xlCreateXMLBook();
 		if((*user_db).load("users_list.xlsx"))	{
 			libxl::Sheet* sheet=(*user_db).getSheet(0); //Sheet INDEX is provided as argument
-			string uname,pwd;
+			string uname,pwd,name,contact;
+			int money_p,money_r,row;
 			bool flag=false;
 			int trial_count=1;
 			while(!flag && trial_count<=3)	{
@@ -33,13 +77,17 @@ void authenticate::login()	{
 				cin>>uname;
 				cout<<"Enter password:";
 				cin>>pwd;
-				int row=2; 
+				row=2; 
 				/* Assuming username are in first column and passwords in the second one.
 				Also row 1 can't be used because of Libxl banner at (0,0) and row 2 has column headings.*/
 				for(;row!=(*sheet).lastRow();row++)	{
 					if(uname==(*sheet).readStr(row,0) && pwd==(*sheet).readStr(row,1))	{
 						flag=true;
-						cout<<"\nWelcome "<<(*sheet).readStr(row,2)<<"\nWhat can we do for you today?\n";
+						name=(*sheet).readStr(row,2);
+						contact=(*sheet).readStr(row,3);
+						money_p=(*sheet).readNum(row,10);
+						money_r=(*sheet).readNum(row,11);
+						cout<<"\nWelcome "<<name<<"\nWhat can we do for you today?\n";
 						break;						
 					}
 				}
@@ -53,8 +101,24 @@ void authenticate::login()	{
 			if(flag==false)
 				cout<<"\nLogin attempts exceeded. Please try again\n\n";
 			else	{
+				//Make constructor
 				user customer;
-				customer.menu(uname);
+				customer.uname=uname;
+				customer.name=name;
+				customer.contact=contact;
+				customer.money_pay=money_p;
+				customer.money_rec=money_r;
+				if((*sheet).readStr(row,4)!="-")
+					customer.rented=true;
+				else
+					customer.rented=false;
+				if((*sheet).readStr(row,7)!="-")
+					customer.lended=true;
+				else
+					customer.lended=false;
+				
+				// customer.postedAd=false;
+				customer.menu();
 			}
 		}
 		else
@@ -69,7 +133,7 @@ void authenticate::login()	{
 
 void authenticate::new_user()	{
 
-	string uname;
+	string uname,name,contact;
 	if(!system("test -e users_list.xlsx"))	{
 			libxl::Book* user_db=xlCreateXMLBook();
 			if((*user_db).load("users_list.xlsx"))	{
@@ -82,23 +146,30 @@ void authenticate::new_user()	{
 					if(!chk_uname(uname))	{
 						int row=(*sheet).lastRow();
 						(*sheet).writeStr(row,0,uname.c_str());
+						
 						cout<<"Pease enter password:";
 						cin>>pwd;
 						(*sheet).writeStr(row,1,pwd.c_str());
-						string c_no;
+						
+
 						cout<<"Please enter your name:";
 						cin.ignore();
 						char n[100];
 						cin.getline(n,100);
-						string name(n);
-						// getline(cin,name);
-						(*sheet).writeStr(row,2,name.c_str());
+						string c_name(n);
+						(*sheet).writeStr(row,2,c_name.c_str());
+						name=c_name;
+
+						string c_no;
 						cout<<"Please enter your contact number:";
 						cin>>c_no;
 						(*sheet).writeStr(row,3,c_no.c_str());
+						contact=c_no;
+						
 						for(int i=4;i<=9;i++)	
 							(*sheet).writeStr(row,i,"-");
 						(*sheet).writeNum(row,10,0);
+						(*sheet).writeNum(row,11,0);
 
 						cout<<"\nWelcome "<<(*sheet).readStr(row,2)<<"\nWhat can we do for you today?\n";
 
@@ -131,30 +202,39 @@ void authenticate::new_user()	{
 		(*sheet).writeStr(1,7,"Rented to");
 		(*sheet).writeStr(1,8,"Contact Number");
 		(*sheet).writeStr(1,9,"Due Date");
-		(*sheet).writeStr(1,10,"Money Due");
+		(*sheet).writeStr(1,10,"Money Payable");
+		(*sheet).writeStr(1,11,"Money Receivable");
 
-		string uname,pwd;
+
+		string pwd;
 		cout<<"Enter the desired username:";
 		cin>>uname;
 		int row=(*sheet).lastRow();
 		(*sheet).writeStr(row,0,uname.c_str());
+
 		cout<<"Pease enter password:";
 		cin>>pwd;
 		(*sheet).writeStr(row,1,pwd.c_str());
-		string c_no;
+		
 		cout<<"Please enter your name:";
 		cin.ignore();
 		char n[100];
 		cin.getline(n,100);
-		string name(n);
+		string c_name(n);
 		// getline(cin,name);
-		(*sheet).writeStr(row,2,name.c_str());
+		(*sheet).writeStr(row,2,c_name.c_str());
+		name=c_name;
+		
+		string c_no;
 		cout<<"Please enter your contact number:";
 		cin>>c_no;
 		(*sheet).writeStr(row,3,c_no.c_str());
+		contact=c_no;
+
 		for(int i=4;i<=9;i++)	
 			(*sheet).writeStr(row,i,"-");
 		(*sheet).writeNum(row,10,0);
+		(*sheet).writeNum(row,11,0);
 		(*user_db).save("users_list.xlsx");
 	
 		cout<<"\nWelcome "<<(*sheet).readStr(row,2)<<"\nWhat can we do for you today?\n";
@@ -163,7 +243,15 @@ void authenticate::new_user()	{
 	}
 
 	user customer;
-	customer.menu(uname);
+	customer.uname=uname;
+	customer.name=name;
+	customer.contact=contact;
+	customer.money_pay=0;
+	customer.money_rec=0;
+	customer.rented=false;
+	customer.lended=false;
+
+	customer.menu();
 	return;
 }
 
@@ -190,7 +278,7 @@ bool authenticate::chk_uname(string uname)	{
 	return status;
 }
 
-void user::menu(string uname)	{
+void user::menu()	{
 
 	int choice;
 	bool flag=true;
@@ -198,13 +286,13 @@ void user::menu(string uname)	{
 		cout<<"\n1.Rent a bike\n2.Put up a bike for renting\n3.View profile\n4.Edit Profile\n0.Logout\n\n";
 		cin>>choice;
 		switch(choice)	{
-			case 1:	rent(uname);
+			case 1:	this->rent();
 					break;
-			case 2:	lend(uname);
+			case 2:	this->lend();
 					break;
-			case 3:	status(uname);
+			case 3:	this->status();
 					break;
-			case 4:	edit(uname);
+			case 4:	this->edit();
 					break;
 			case 0:	flag=false;
 					break;
@@ -216,42 +304,50 @@ void user::menu(string uname)	{
 	}
 }
 
-void user::status(string uname)	{
+void user::status()	{
 
 	libxl::Book* user_db=xlCreateXMLBook();
 	(*user_db).load("users_list.xlsx");
 	libxl::Sheet* sheet=(*user_db).getSheet(0);
 	int row=(*sheet).firstRow();
 	for(;row!=(*sheet).lastRow();row++)
-		if((*sheet).readStr(row,0)==uname)
+		if((*sheet).readStr(row,0)==this->uname)
 			break;
+
+	double return_rent=(*sheet).readNum(row,6);
+	double return_lend=(*sheet).readNum(row,9);
+	int return_r[3],return_l[3];
+	(*user_db).dateUnpack(return_rent,&return_r[0],&return_r[1],&return_r[2]);
+	(*user_db).dateUnpack(return_lend,&return_l[0],&return_l[1],&return_l[2]);
+	
 	cout<<"\n---- Customer Profile ----\n\n";
-	cout<<"\nName-"<<(*sheet).readStr(row,2);
-	cout<<"\nUsername-"<<(*sheet).readStr(row,0);
-	cout<<"\nContact Number-"<<(*sheet).readStr(row,3);
+	cout<<"\nName-"<<this->name;
+	cout<<"\nUsername-"<<this->uname;
+	cout<<"\nContact Number-"<<this->contact;
 	cout<<"\n\n**CYCLES RENTED**\n";
-	cout<<"\nRented from-"<<(*sheet).readStr(row,4);
+	cout<<"\nRented from-"<<this->getName((*sheet).readStr(row,4));
 	cout<<"\nContact Number-"<<(*sheet).readStr(row,5);
-	cout<<"\nReturn on-"<<(*sheet).readStr(row,6);
+	cout<<"\nReturn on-"<<return_r[2]<<"/"<<return_r[1]<<"/"<<return_r[0];
 	cout<<"\n\n**CYCLES PUT OUT ON RENT**\n";
-	cout<<"\nRented to-"<<(*sheet).readStr(row,7);
+	cout<<"\nRented to-"<<this->getName((*sheet).readStr(row,7));
 	cout<<"\nContact Number-"<<(*sheet).readStr(row,8);
-	cout<<"\nTo be returned on-"<<(*sheet).readStr(row,9);
-	cout<<"\n\nMoney due-"<<(*sheet).readNum(row,10)<<"\n\n";
+	cout<<"\nTo be returned on-"<<return_l[2]<<"/"<<return_l[1]<<"/"<<return_l[0];
+	cout<<"\n\nMoney Payable-"<<this->money_pay<<"\n";
+	cout<<"Money Receivable-"<<this->money_rec<<"\n\n";
 	cout<<"--------------------\n\n";
 
 	(*user_db).release();
 	return;
 }
 
-void user::edit(string uname)	{
+void user::edit()	{
 
 	libxl::Book* user_db=xlCreateXMLBook();
 	(*user_db).load("users_list.xlsx");
 	libxl::Sheet* sheet=(*user_db).getSheet(0);
 	int row=(*sheet).firstRow();
 	for(;row!=(*sheet).lastRow();row++)
-		if((*sheet).readStr(row,0)==uname)
+		if((*sheet).readStr(row,0)==this->uname)
 			break;
 
 	int n;
@@ -266,6 +362,7 @@ void user::edit(string uname)	{
 						string no;
 						cout<<"\nPlease enter your new contact number-";
 						cin>>no;
+						this->contact=no;
 						(*sheet).writeStr(row,3,no.c_str());
 						cout<<"\nContact number updated successfully!\n";
 						(*user_db).save("users_list.xlsx");
@@ -309,7 +406,7 @@ int* user::getDate(int i)	{
 	return arr;
 }
 
-void user::lend(string uname)	{
+void user::lend()	{
 
 	libxl::Book* rental_db=xlCreateXMLBook();
 	
@@ -322,7 +419,7 @@ void user::lend(string uname)	{
 
 		int row=(*sheet).lastRow();
 		// user u;
-		(*sheet).writeStr(row,6,uname.c_str());
+		(*sheet).writeStr(row,6,this->uname.c_str());
 		// (*sheet).writeStr(row,7,(u.getContact(uname)).c_str());
 
 		string  inp;
@@ -344,18 +441,18 @@ void user::lend(string uname)	{
 		(*sheet).writeStr(row,1,inp.c_str());
 		
 		cout<<"\nWhich rent bracket do you wish to place your bike in-\n1)Rs.500/day  2)Rs 800/day  3)Rs.1000/day\n";
-		int s;
+		int s,input;
 		cin>>s;
 		switch(s)	{
-			case 1:	inp="Rs.500/day";
-						break;
-			case 2:	inp="Rs.800/day";
-						break;
-			case 3:	inp="Rs.1000/day";
-						break;
+			case 1:	input=500;
+					break;
+			case 2:	input=800;
+					break;
+			case 3:	input=1000;
+					break;
 		}
 
-		(*sheet).writeStr(row,2,inp.c_str());
+		(*sheet).writeNum(row,2,input);
 		
 		cout<<"\nPlease enter your location-";
 		cin.ignore();
@@ -398,7 +495,7 @@ void user::lend(string uname)	{
 		int row=(*sheet).lastRow();
 
 		// user u;
-		(*sheet).writeStr(row,6,uname.c_str());
+		(*sheet).writeStr(row,6,this->uname.c_str());
 		// (*sheet).writeStr(row,7,(u.getContact(uname)).c_str());
 
 		string  inp;
@@ -406,6 +503,9 @@ void user::lend(string uname)	{
 		
 		cout<<"\nBrand-";
 		cin>>inp;
+		for(int i=0;i<inp.length();i++)
+			inp[i]=tolower(inp[i]);
+
 		(*sheet).writeStr(row,0,inp.c_str());
 		
 		cout<<"\nGeared [y/n]-";
@@ -417,18 +517,18 @@ void user::lend(string uname)	{
 		(*sheet).writeStr(row,1,inp.c_str());
 		
 		cout<<"\nWhich rent bracket do you wish to place your bike in-\n1)Rs.500/day  2)Rs 800/day  3)Rs.1000/day\n";
-		int s;
+		int s,input;
 		cin>>s;
 		switch(s)	{
-			case 1:	inp="Rs.500/day";
-						break;
-			case 2:	inp="Rs.800/day";
-						break;
-			case 3:	inp="Rs.1000/day";
-						break;
+			case 1:	input=500;
+					break;
+			case 2:	input=800;
+					break;
+			case 3:	input=1000;
+					break;
 		}
 
-		(*sheet).writeStr(row,2,inp.c_str());
+		(*sheet).writeNum(row,2,input);
 		
 		cout<<"\nPlease enter your location-";
 		cin.ignore();
@@ -462,9 +562,9 @@ void user::lend(string uname)	{
 return;
 }
 
-void user::rent(string uname)	{
+void user::rent()	{
 	
-	user u;
+	// user u;
 	if(!system("test -e rental_list.xlsx"))	{
 		cout<<"Please choose the price filter [press '0' to skip]\n1.Rs.500/day only\n2.Rs.800/day only\n3.Rs.1000/day only\n4.<=Rs.800/day\n";
 		int pr;
@@ -474,7 +574,7 @@ void user::rent(string uname)	{
 		cout<<"Please choose the brand filter [press '0' to skip]\n";
 		
 		string* brands=new string[25];
-		int l=u.getBrands(brands);
+		int l=this->getBrands(brands);
 		for(int i=0;i<l;i++)
 			cout<<i+1<<"."<<brands[i]<<endl;
 		int br;
@@ -489,7 +589,7 @@ void user::rent(string uname)	{
 		cin>>d;
 
 		int filters[4]={pr,br,gr,d};
-		u.runQuery(filters);
+		this->runQuery(filters);
 
 	}
 	else
@@ -534,7 +634,7 @@ void user::runQuery(int* filters)	{
 
 	// cout<<"Here"<<filters[0]<<" "<<filters[1]<<" "<<filters[2]<<" "<<filters[3];
 	
-	user u;
+	// user u;
 	libxl::Book* rental_db=xlCreateXMLBook();
 	libxl::Book* query_db=xlCreateXMLBook();
 
@@ -549,7 +649,7 @@ void user::runQuery(int* filters)	{
 	libxl::Sheet* r_sheet=(*rental_db).getSheet(0);
 	libxl::Sheet* q_sheet=(*query_db).addSheet("Sheet1");
 
-	for(int i=0;i<=6;i++)
+	for(int i=0;i<=6;i++)	
 		(*q_sheet).writeStr(1,i,(*r_sheet).readStr(1,i));
 
 	
@@ -578,28 +678,28 @@ void user::runQuery(int* filters)	{
 				break;
 	}
 
-	int* till_date=u.getDate(filters[3]);
+	int* till_date=this->getDate(filters[3]);
 	
 	//Price filter
-	string price_f[2]={"",""};
+	int price_f[2]={0,0};
 	switch(filters[0])	{
-		case 1:	price_f[0]="Rs.500/day";
-				price_f[1]="";
+		case 1:	price_f[0]=500;
+				price_f[1]=0;
 				break;
-		case 2:	price_f[0]="Rs.800/day";
-				price_f[1]="";
+		case 2:	price_f[0]=800;
+				price_f[1]=0;
 				break;
-		case 3:	price_f[0]="Rs.1000/day";
-				price_f[1]="";
+		case 3:	price_f[0]=1000;
+				price_f[1]=0;
 				break;
-		case 4:	price_f[0]="Rs.500/day";
-				price_f[1]="Rs.800/day";
+		case 4:	price_f[0]=500;
+				price_f[1]=800;
 				break;
-		case 0:	price_f[0]="";
-				price_f[1]="";
-				break;
-		default:price_f[0]="";
-				price_f[1]="";
+		// case 0:	price_f[0]="";
+		// 		price_f[1]="";
+		// 		break;
+		default:price_f[0]=0;
+				price_f[1]=0;
 				break;
 	}
 
@@ -610,7 +710,7 @@ void user::runQuery(int* filters)	{
 	cout<<"\ndate-"<<till_date[0]<<till_date[1]<<till_date[2]<<endl;
 
 	bool match=true;
-	cout<<"FLAG INITIAL VALUE="<<match<<endl;
+	// cout<<"FLAG INITIAL VALUE="<<match<<endl;
 	int query_row=2;
 
 	for(int i=2;i!=(*r_sheet).lastRow();i++)	{
@@ -618,28 +718,28 @@ void user::runQuery(int* filters)	{
 		match=true;
 		
 		if(brand_f!="")	{
-			cout<<"brand_check\n";
+			// cout<<"brand_check\n";
 			cout<<(*r_sheet).readStr(i,0)<<endl;
 			if((*r_sheet).readStr(i,0)!=brand_f)	{
-				cout<<"Fuck\n";
+				// cout<<"Fuck\n";
 				match=false;
 			}
 		}
 
-		if(price_f[0]!="")	{
-			cout<<"price_check\n";
-			cout<<(*r_sheet).readStr(i,2)<<endl;
-			if((*r_sheet).readStr(i,2)!=price_f[0] && (*r_sheet).readStr(i,2)!=price_f[1])	{
-				cout<<"Fuck2\n";
+		if(price_f[0]!=0)	{
+			// cout<<"price_check\n";
+			cout<<(*r_sheet).readNum(i,2)<<endl;
+			if((*r_sheet).readNum(i,2)!=price_f[0] && (*r_sheet).readNum(i,2)!=price_f[1])	{
+				// cout<<"Fuck2\n";
 				match=false;
 			}
 		}
 
 		if(geared_f!="")	{
-			cout<<"gear_check\n";
+			// cout<<"gear_check\n";
 			cout<<(*r_sheet).readStr(i,1)<<endl;
 			if((*r_sheet).readStr(i,1)!=geared_f)	{
-				cout<<"Fuck3\n";
+				// cout<<"Fuck3\n";
 				match=false;			
 			}
 		}
@@ -647,11 +747,11 @@ void user::runQuery(int* filters)	{
 		int yr,mon,day;
 		double read_date=(*r_sheet).readNum(i,5);
 		(*rental_db).dateUnpack(read_date,&yr,&mon,&day);
-		cout<<"Avail_date="<<yr<<" "<<mon<<" "<<day<<endl;
-		cout<<"date_needed-"<<till_date[0]<<" "<<till_date[1]<<" "<<till_date[2]<<endl;
+		// cout<<"Avail_date="<<yr<<" "<<mon<<" "<<day<<endl;
+		// cout<<"date_needed-"<<till_date[0]<<" "<<till_date[1]<<" "<<till_date[2]<<endl;
 
 		if(yr!=0)	{
-			cout<<"date_check\n";
+			// cout<<"date_check\n";
 
 			if(yr>=till_date[0]){
 				if(mon>till_date[1]){
@@ -663,34 +763,41 @@ void user::runQuery(int* filters)	{
 							// continue;
 						}
 						else	{
-							cout<<"Fuck_day\n";
+							// cout<<"Fuck_day\n";
 							match=false;				
 						}
 					}
 				else	{
-					cout<<"Fuck_month\n";
+					// cout<<"Fuck_month\n";
 					match=false;
 				}
 			}
 			else	{
-				cout<<"Fuck_yr\n";
+				// cout<<"Fuck_yr\n";
 				match=false;				
 			}
 		}
 
-		cout<<"for i="<<i<<endl;
-		cout<<"match="<<match<<endl<<endl;
+		// cout<<"for i="<<i<<endl;
+		// cout<<"match="<<match<<endl<<endl;
 		if(match==true)	{
-			cout<<"writing\n";
+			// cout<<"writing\n";
 			for(int j=0;j<=6;j++)	{
-				if(j!=5)
+				if(j!=5 && j!=2)	
 					(*q_sheet).writeStr(query_row,j,(*r_sheet).readStr(i,j));
-				else
-					(*q_sheet).writeNum(query_row,j,(*r_sheet).readNum(i,j),dateformat);
+				
+				else	{
+					if(j==5)
+						(*q_sheet).writeNum(query_row,j,(*r_sheet).readNum(i,j),dateformat);
+					else
+						(*q_sheet).writeNum(query_row,j,(*r_sheet).readNum(i,j));
+				}
+	
 
-			user x;
-			string name=x.getName((*r_sheet).readStr(i,6));
-			string cno=x.getContact((*r_sheet).readStr(i,6));
+
+			// user x;
+			string name=this->getName((*r_sheet).readStr(i,6));
+			string cno=this->getContact((*r_sheet).readStr(i,6));
 			(*q_sheet).writeStr(query_row,7,name.c_str());
 			(*q_sheet).writeStr(query_row,8,cno.c_str());
 
@@ -698,7 +805,7 @@ void user::runQuery(int* filters)	{
 			query_row++;
 		}
 		// cout<<name<<cno;
-		cout<<"**\n";
+		// cout<<"**\n";
 	}
 	// (*r_sheet).insertCol((*r_sheet).lastCol(),(*r_sheet).lastCol());
 	// (*r_sheet).insertCol((*r_sheet).lastCol(),(*r_sheet).lastCol());
@@ -720,7 +827,7 @@ void user::runQuery(int* filters)	{
 	if(ch==0)
 		return;
 	else
-		confirmRent(ch,till_date);
+		this->confirmRent(ch,till_date,filters[3]);
 
 	return;
 
@@ -728,14 +835,14 @@ void user::runQuery(int* filters)	{
 	
 }
 
-void user::confirmRent(int ch,int* till_date)	{
+void user::confirmRent(int ch,int* till_date,int days)	{
 
-	string uname,pass;
-	cout<<"Please enter username and password to confirm-\n";
-	cout<<"Username:";
-	cin>>uname;
-	cout<<"Password:";
-	cin>>pass;
+	// string uname,pass;
+	// cout<<"Please enter username and password to confirm-\n";
+	// cout<<"Username:";
+	// cin>>uname;
+	// cout<<"Password:";
+	// cin>>pass;
 
 	libxl::Book* rental=xlCreateXMLBook();
 	libxl::Book* query=xlCreateXMLBook();
@@ -751,19 +858,28 @@ void user::confirmRent(int ch,int* till_date)	{
 
 	libxl::Sheet* q_sheet=(*query).getSheet(0);
 
+	string owner;
+	int price;
+
 	if(l_sheet!=NULL)	{
 
 		int row=(*l_sheet).lastRow();
 
 		for(int i=0;i<=6;i++)	{
-			if(i!=5)
+			if(i!=5 && i!=2)
 				(*l_sheet).writeStr(row,i,(*q_sheet).readStr(ch+1,i));
-			else
-				(*l_sheet).writeNum(row,i,(*q_sheet).readNum(ch+1,i),dateformat);
+			else	{
+				if(i==5)
+					(*l_sheet).writeNum(row,i,(*q_sheet).readNum(ch+1,i),dateformat);
+				else	{
+					price=(*q_sheet).readNum(ch+1,i);
+					(*l_sheet).writeNum(row,i,(*q_sheet).readNum(ch+1,i));
+				}
+			}
 
 		}
-
-		(*l_sheet).writeStr(row,7,uname.c_str());
+		owner=(*l_sheet).readStr(row,6);
+		(*l_sheet).writeStr(row,7,this->uname.c_str());
 		(*l_sheet).writeNum(row,8,(*rental).datePack(till_date[0],till_date[1],till_date[2]),dateformat);
 
 	}
@@ -777,30 +893,81 @@ void user::confirmRent(int ch,int* till_date)	{
 		int row=(*l_sheet).lastRow();
 
 		for(int i=0;i<=6;i++)	{
-			if(i!=5)
+			if(i!=5 && i!=2)
 				(*l_sheet).writeStr(row,i,(*q_sheet).readStr(ch+1,i));
-			else
-				(*l_sheet).writeNum(row,i,(*q_sheet).readNum(ch+1,i),dateformat);
+			else	{
+				if(i==5)
+					(*l_sheet).writeNum(row,i,(*q_sheet).readNum(ch+1,i),dateformat);
+				else	{
+					price=(*q_sheet).readNum(ch+1,i);
+					(*l_sheet).writeNum(row,i,(*q_sheet).readNum(ch+1,i));
+				}
+			}
 
 		}
 
-		(*l_sheet).writeStr(row,7,uname.c_str());
+		owner=(*l_sheet).readStr(row,6);	
+		(*l_sheet).writeStr(row,7,this->uname.c_str());
 		(*l_sheet).writeNum(row,8,(*rental).datePack(till_date[0],till_date[1],till_date[2]),dateformat);
 
 	}
+	//Delete the rented bike from 'to-rent' list
+	int find_row;
+	for(find_row=2;find_row<(*r_sheet).lastRow();find_row++)	{
+		if((*r_sheet).readStr(find_row,6)==owner)
+			break;
+	}
 
+	(*r_sheet).removeRow(find_row,find_row);
+
+	//Update status in users' database
+	libxl::Book* users_db=xlCreateXMLBook();
+	(*users_db).load("users_list.xlsx");
+	libxl::Sheet* u_sheet=(*users_db).getSheet(0);
+	libxl::Format* d_format=(*users_db).addFormat();
+	(*d_format).setNumFormat(libxl::NUMFORMAT_DATE);
+
+
+	int money=price*days;
+	// cout<<money'\n';
+	for(int i=2;i<(*u_sheet).lastRow();i++)	{
+		
+		if((*u_sheet).readStr(i,0)==owner)	{
+			(*u_sheet).writeStr(i,7,this->uname.c_str());
+			(*u_sheet).writeStr(i,8,this->contact.c_str());
+			int temp=(*u_sheet).readNum(i,11);
+			(*u_sheet).writeNum(i,11,temp+money);
+			(*u_sheet).writeNum(i,9,(*users_db).datePack(till_date[0],till_date[1],till_date[2]),d_format);
+		}
+
+		if((*u_sheet).readStr(i,0)==this->uname)	{
+			(*u_sheet).writeStr(i,4,owner.c_str());
+			(*u_sheet).writeStr(i,5,this->getContact(owner).c_str());
+			int temp=(*u_sheet).readNum(i,10);
+			(*u_sheet).writeNum(i,10,temp+money);
+			(*u_sheet).writeNum(i,6,(*users_db).datePack(till_date[0],till_date[1],till_date[2]),d_format);
+		}
+	}
+
+	this->money_pay+=money;
+	this->rented=true;
 	cout<<"Bike rented successfully!\nReturn date-"<<till_date[2]<<"/"<<till_date[1]<<"/"<<till_date[0]<<endl;
 	cout<<"Location:"<<(*q_sheet).readStr(ch+1,3)<<endl;
 	system("rm -f queryResults.xlsx");
 	(*rental).save("rental_list.xlsx");
+	(*users_db).save("users_list.xlsx");
 	(*rental).release();
 	(*query).release();
+	(*users_db).release();
 
 	return;
 }
 
 
 string user::getName(string uname)	{
+
+	if(uname=="-")
+		return "-";
 	
 	libxl::Book* user_db=xlCreateXMLBook();
 	(*user_db).load("users_list.xlsx");
@@ -818,6 +985,9 @@ string user::getName(string uname)	{
 }
 
 string user::getContact(string uname)	{
+
+	if(uname=="-")
+		return "-";
 	
 	libxl::Book* user_db=xlCreateXMLBook();
 	(*user_db).load("users_list.xlsx");
