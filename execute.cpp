@@ -109,26 +109,31 @@ void authenticate::login()	{
 			if(flag==false)
 				cout<<"\nLogin attempts exceeded. Please try again\n\n";
 			else	{
-				//Make constructor
 				user customer;
 				customer.uname=uname;
 				customer.name=name;
 				customer.contact=contact;
 				customer.money_pay=money_p;
 				customer.money_rec=money_r;
-				if((*(users.sheet1)).readStr(row,4)!="-")
-					customer.rented=true;
-				else
+				string r=(*(users.sheet1)).readStr(row,4);
+				string l=(*(users.sheet1)).readStr(row,7);
+				if(r=="-")	{
 					customer.rented=false;
-				if((*(users.sheet1)).readStr(row,7)!="-")
-					customer.lended=true;
-				else
+				}
+				else	{
+					customer.rented=true;
+				}
+				if(l=="-")	{
 					customer.lended=false;
+				}
+				else	{
+					customer.lended=true;
+				}
 				
+				users.saveDB("users_list.xlsx");		
 				customer.menu();
 			}
 		
-		users.saveDB("users_list.xlsx");
 	}
 	else
 		cout<<"Users' database not found!\n";
@@ -279,8 +284,9 @@ void user::menu()	{
 
 	int choice;
 	bool flag=true;
+
 	while(flag)	{
-		cout<<"\n1.Rent a bike\n2.Put up a bike for renting\n3.View profile\n4.Edit Profile\n0.Logout\n\n";
+		cout<<"\n1.Rent a bike\n2.Put up a bike for renting\n3.View profile\n4.Edit Profile\n5.Mark bike as 'returned'\n0.Logout\n\n";
 		cin>>choice;
 		switch(choice)	{
 			case 1:	this->rent();
@@ -291,6 +297,8 @@ void user::menu()	{
 					break;
 			case 4:	this->edit();
 					break;
+			case 5:	this->returnBike();
+					break;		
 			case 0:	flag=false;
 					break;
 			default:cout<<"Incorrect input.Please enter a valid choice.\n";
@@ -485,7 +493,6 @@ void user::lend()	{
 
 		int row=(*(rental.sheet1)).lastRow();
 
-		// user u;
 		(*(rental.sheet1)).writeStr(row,6,this->uname.c_str());
 
 		string  inp;
@@ -555,8 +562,10 @@ return;
 
 void user::rent()	{
 	
-	// user u;
 	if(!system("test -e rental_list.xlsx"))	{
+		
+		this->updateDB();
+
 		cout<<"Please choose the price filter [press '0' to skip]\n1.Rs.500/day only\n2.Rs.800/day only\n3.Rs.1000/day only\n4.<=Rs.800/day\n";
 		int pr;
 		cin>>pr;
@@ -600,6 +609,8 @@ int user::getBrands(string* brands)	{
 	for(int i=2;i<row;i++)
 		brand_data[i-2]=(*(rental.sheet1)).readStr(i,0);
 
+	rental.saveDB("rental_list.xlsx");
+
 	int length=0;
 
 	for(int i=0;i<row-2;i++)	{
@@ -617,14 +628,11 @@ int user::getBrands(string* brands)	{
 		}
 	}
 
-	rental.saveDB("rental_list.xlsx");
 
 	return length;
 }
 
 void user::runQuery(int* filters)	{
-
-	libxl::Book* query_db=xlCreateXMLBook();
 
 	db_access rental,query;
 	rental.loadDB("rental_list.xlsx",0);
@@ -640,7 +648,7 @@ void user::runQuery(int* filters)	{
 	//Brand filter
 	if(filters[1]!=0)	{
 		string* br_list=new string[25];
-		getBrands(br_list);
+		this->getBrands(br_list);
 		brand_f=br_list[(filters[1]-1)];
 	}
 	else
@@ -689,21 +697,18 @@ void user::runQuery(int* filters)	{
 		match=true;
 		
 		if(brand_f!="")	{
-			cout<<(*(rental.sheet1)).readStr(i,0)<<endl;
 			if((*(rental.sheet1)).readStr(i,0)!=brand_f)	{
 				match=false;
 			}
 		}
 
 		if(price_f[0]!=0)	{
-			cout<<(*(rental.sheet1)).readNum(i,2)<<endl;
 			if((*(rental.sheet1)).readNum(i,2)!=price_f[0] && (*(rental.sheet1)).readNum(i,2)!=price_f[1])	{
 				match=false;
 			}
 		}
 
 		if(geared_f!="")	{
-			cout<<(*(rental.sheet1)).readStr(i,1)<<endl;
 			if((*(rental.sheet1)).readStr(i,1)!=geared_f)	{
 				match=false;			
 			}
@@ -743,7 +748,7 @@ void user::runQuery(int* filters)	{
 				else	{
 					if(j==5)
 						(*(query.sheet1)).writeNum(query_row,j,(*(rental.sheet1)).readNum(i,j),query.format);
-					else
+					if(j==2)
 						(*(query.sheet1)).writeNum(query_row,j,(*(rental.sheet1)).readNum(i,j));
 				}
 	
@@ -771,8 +776,11 @@ void user::runQuery(int* filters)	{
 	cout<<"\nA 'queryResults.xlsx' has been created.Please enter the 'uniqueID' of the bike you want to rent or enter '0' to discard query\n";
 	int choice;
 	cin>>choice;
-	if(choice==0)
+	if(choice==0)	{
+		system("rm -f queryResults.xlsx");
+		cout<<"\nQuery discarded.\n";
 		return;
+	}
 	else
 		this->confirmRent(choice,till_date,filters[3]);
 
@@ -836,8 +844,8 @@ void user::confirmRent(int ch,int* till_date,int days)	{
 		owner=(*(rental.sheet2)).readStr(row,6);	
 		(*(rental.sheet2)).writeStr(row,7,this->uname.c_str());
 		(*(rental.sheet2)).writeNum(row,8,(*(rental.book)).datePack(till_date[0],till_date[1],till_date[2]),rental.format);
-
 	}
+
 	//Delete the rented bike from 'to-rent' list
 	int find_row;
 	for(find_row=2;find_row<(*(rental.sheet1)).lastRow();find_row++)	{
@@ -847,15 +855,17 @@ void user::confirmRent(int ch,int* till_date,int days)	{
 
 	(*(rental.sheet1)).removeRow(find_row,find_row);
 
+	rental.saveDB("rental_list.xlsx");
+
 	//Update status in users' database
 	db_access users;
 	users.loadDB("users_list.xlsx",0);
 
 	int money=price*days;
-	// cout<<money'\n';
 	for(int i=2;i<(*(users.sheet1)).lastRow();i++)	{
 		
-		if((*(users.sheet1)).readStr(i,0)==owner)	{
+		string uname=(*(users.sheet1)).readStr(i,0);
+		if(uname==owner)	{
 			(*(users.sheet1)).writeStr(i,7,this->uname.c_str());
 			(*(users.sheet1)).writeStr(i,8,this->contact.c_str());
 			int temp=(*(users.sheet1)).readNum(i,11);
@@ -863,7 +873,7 @@ void user::confirmRent(int ch,int* till_date,int days)	{
 			(*(users.sheet1)).writeNum(i,9,(*(users.book)).datePack(till_date[0],till_date[1],till_date[2]),users.format);
 		}
 
-		if((*(users.sheet1)).readStr(i,0)==this->uname)	{
+		if(uname==this->uname)	{
 			(*(users.sheet1)).writeStr(i,4,owner.c_str());
 			(*(users.sheet1)).writeStr(i,5,this->getContact(owner).c_str());
 			int temp=(*(users.sheet1)).readNum(i,10);
@@ -877,10 +887,113 @@ void user::confirmRent(int ch,int* till_date,int days)	{
 	cout<<"Bike rented successfully!\nReturn date-"<<till_date[2]<<"/"<<till_date[1]<<"/"<<till_date[0]<<endl;
 	cout<<"Location:"<<(*(query.sheet1)).readStr(ch+1,3)<<endl;
 	users.saveDB("users_list.xlsx");
-	rental.saveDB("rental_list.xlsx");
 	query.saveDB("queryResults.xlsx");
 
 	system("rm -f queryResults.xlsx");
+
+	return;
+}
+
+void user::updateDB()	{
+
+	db_access rental;
+	rental.loadDB("rental_list.xlsx",0);
+
+	int* date=this->getDate(0);
+	double date_today=(*(rental.book)).datePack(date[0],date[1],date[2]);
+
+	for(int i=2;i!=(*(rental.sheet1)).lastRow();i++)	{
+
+		double av_date=(*(rental.sheet1)).readNum(i,5);
+		if(av_date!=0)	{
+			if(av_date<=date_today)	{
+				(*(rental.sheet1)).removeRow(i,i);
+				i--;
+			}
+		}
+	}
+
+	rental.saveDB("rental_list.xlsx");
+
+	return;
+}
+
+void user::returnBike()	{
+
+	if(this->lended==true)	{
+
+		db_access rental;
+		rental.loadDB("rental_list.xlsx",0,1);
+
+		int lended_row=2;
+		string owner=this->uname;
+		string renter;
+		
+		for(;lended_row!=(*(rental.sheet2)).lastRow();lended_row++)	{
+
+			if((*(rental.sheet2)).readStr(lended_row,6)==owner)	
+				break;
+			
+		}
+
+		renter=(*(rental.sheet2)).readStr(lended_row,7);
+
+		int row=(*(rental.sheet1)).lastRow();
+
+		for(int i=0;i<=6;i++)	{
+
+			if(i!=2 && i!=5)	{
+
+				(*(rental.sheet1)).writeStr(row,i,(*(rental.sheet2)).readStr(lended_row,i));
+
+			}
+			else	{
+				if(i==2)
+					(*(rental.sheet1)).writeNum(row,i,(*(rental.sheet2)).readNum(lended_row,i));
+				if(i==5)
+					(*(rental.sheet1)).writeNum(row,i,(*(rental.sheet2)).readNum(lended_row,i),rental.format);
+
+			}
+		}
+
+		(*(rental.sheet2)).removeRow(lended_row,lended_row);
+
+		rental.saveDB("rental_list.xlsx");
+
+		db_access users;
+		users.loadDB("users_list.xlsx",0);
+
+		for(int i=2;i!=(*(users.sheet1)).lastRow();i++)	{
+
+			if((*(users.sheet1)).readStr(i,0)==renter)	{
+
+				(*(users.sheet1)).writeStr(i,4,"-");
+				(*(users.sheet1)).writeStr(i,5,"-");
+				(*(users.sheet1)).writeStr(i,6,"-");
+				(*(users.sheet1)).writeNum(i,10,0);
+
+			}
+
+			if((*(users.sheet1)).readStr(i,0)==owner)	{
+
+				(*(users.sheet1)).writeStr(i,7,"-");
+				(*(users.sheet1)).writeStr(i,8,"-");
+				(*(users.sheet1)).writeStr(i,9,"-");
+				(*(users.sheet1)).writeNum(i,11,0);
+
+			}
+		}
+
+	this->lended=false;
+	this->money_rec=0;
+	
+	cout<<"\nAccount information updated successfully!\n";
+
+	users.saveDB("users_list.xlsx");
+	}
+
+	else
+		cout<<"\nNo bike rented out yet!\n";
 
 	return;
 }

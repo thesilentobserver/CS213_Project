@@ -33,7 +33,7 @@ public:
 private:
 	void login();
 	void new_user();
-	bool chk_uname(string uname);	
+	bool chk_uname(string uname);		
 
 };
 
@@ -61,6 +61,8 @@ private:
 	void edit();
 	void runQuery(int* filters);
 	void confirmRent(int choice,int* till_date,int days);
+	void updateDB();
+	void returnBike();
 	
 
 
