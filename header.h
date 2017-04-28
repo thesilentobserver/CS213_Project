@@ -63,6 +63,7 @@ private:
 	void confirmRent(int choice,int* till_date,int days);
 	void updateDB();
 	void returnBike();
+	void removeAd();
 	
 
 

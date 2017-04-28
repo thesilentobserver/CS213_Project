@@ -286,7 +286,7 @@ void user::menu()	{
 	bool flag=true;
 
 	while(flag)	{
-		cout<<"\n1.Rent a bike\n2.Put up a bike for renting\n3.View profile\n4.Edit Profile\n5.Mark bike as 'returned'\n0.Logout\n\n";
+		cout<<"\n1.Rent a bike\n2.Put up a bike for renting\n3.View profile\n4.Edit Profile\n5.Mark bike as 'returned'\n6.Remove bike listing\n0.Logout\n\n";
 		cin>>choice;
 		switch(choice)	{
 			case 1:	this->rent();
@@ -298,6 +298,8 @@ void user::menu()	{
 			case 4:	this->edit();
 					break;
 			case 5:	this->returnBike();
+					break;
+			case 6:	this->removeAd();
 					break;		
 			case 0:	flag=false;
 					break;
@@ -1037,4 +1039,59 @@ string user::getContact(string uname)	{
 	users.saveDB("users_list.xlsx");
 		
 	return contact;	
+}
+
+void user::removeAd()	{
+
+
+	if(!system("test -e rental_list.xlsx"))	{
+
+		db_access rental;
+		rental.loadDB("rental_list.xlsx",0,1);
+
+		bool found=false;
+
+		for(int i=2;i!=(*(rental.sheet1)).lastRow();i++)	{
+
+			string owner=(*(rental.sheet1)).readStr(i,6);
+			if(owner==this->uname)	{
+
+				(*(rental.sheet1)).removeRow(i,i);
+				cout<<"\nBike listing removed successfully!\n";
+				found=true;
+				rental.saveDB("rental_list.xlsx");
+				break;
+			}
+		}
+
+		if(found==false)	{
+
+			bool flag=false;
+			if((rental.sheet2)!=NULL)	{
+
+				for(int i=2;i!=(*(rental.sheet2)).lastRow();i++)	{
+
+					string owner=(*(rental.sheet2)).readStr(i,6);
+					if(owner==this->uname)	{
+
+						cout<<"\nYour bike is currently rented out.Please wait for its return\n";
+						flag=true;
+						rental.saveDB("rental_list.xlsx");
+						break;
+					}
+				}
+			}
+
+			if(flag==false)	{
+
+				cout<<"\nYou do not have any bike listed currently.\n";
+				rental.saveDB("rental_list.xlsx");
+			}
+		}
+
+	}
+	else
+		cout<<"\nNo bike listed for rental.\n";
+
+	return;
 }
