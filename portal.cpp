@@ -1095,3 +1095,8 @@ void user::removeAd()	{
 
 	return;
 }
+
+int main()	{
+	authenticate auth;
+	auth.start();
+}

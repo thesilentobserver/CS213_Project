@@ -40,18 +40,19 @@ private:
 
 struct user {
 
+	string uname,name,contact;
+	bool rented,lended;
+	int money_pay,money_rec;
+
 
 public:
-	void menu();
+	void menu();	
 	int* getDate(int i);
 	string getName(string uname);
 	string getContact(string uname);
 	int getBrands(string* brands);
 
-	string uname,name,contact;
-	bool rented,lended;
-	int money_pay,money_rec;
-
+	
 
 
 private:
